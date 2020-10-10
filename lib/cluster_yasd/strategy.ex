@@ -1,6 +1,31 @@
 defmodule ClusterYASD.Strategy do
   @moduledoc """
   YASD Strategy for libcluster.
+
+  Use this module as strategy in your libcluster topologies.
+
+  ```elixir
+  topologies = [
+    my_yasd: [
+   	  strategy: ClusterYASD.Strategy,
+   	  config: [
+        base_url: "http://yaasd:4001",
+        application_name: :my_app,
+        polling_interval: 10, # seconds
+        register_interval: 30, # seconds
+        immidiate_register: true
+   	  ]
+    ]
+  ]
+  # Other than `base_url` all other configurations are optional.
+  ```
+
+
+  And finally add it to your supervision tree.
+
+  ```elixir
+  {Cluster.Supervisor, [topologies, [name: MyApp.ClusterSupervisor]]}
+  ```
   """
 
   use Cluster.Strategy
@@ -8,10 +33,12 @@ defmodule ClusterYASD.Strategy do
 
   require Logger
 
-  @default_poll_interval 10
+  @default_polling_interval 10
   @default_register_interval 30
 
   def start_link([state]) do
+    Keyword.fetch!(state.config, :base_url)
+
     GenServer.start_link(__MODULE__, state)
   end
 
@@ -21,7 +48,10 @@ defmodule ClusterYASD.Strategy do
     app_name = Keyword.get(config, :application_name, app_name)
 
     schedule_next_poll(state)
-    send(self(), :register)
+
+    if Keyword.get(config, :immidiate_register, true) do
+      send(self(), :register)
+    end
 
     {:ok, Map.put(state, :config, Keyword.merge(config, application_name: app_name, ip: ip))}
   end
@@ -101,7 +131,7 @@ defmodule ClusterYASD.Strategy do
     Process.send_after(
       self(),
       :load,
-      Keyword.get(state.config, :poll_interval, @default_poll_interval) * 1000
+      Keyword.get(state.config, :polling_interval, @default_polling_interval) * 1000
     )
   end
 
