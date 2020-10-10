@@ -31,10 +31,10 @@ NOTE: **All nodes should have the same cookie in order to connect**
 ```elixir
 topologies = [
   my_yasd: [
-	strategy: ClusterYASD.Strategy,
-	config: [
-	  base_url: "http://yaasd:4001" 
-	]
+    strategy: ClusterYASD.Strategy,
+    config: [
+      base_url: "http://yaasd:4001" 
+    ]
   ]
 ]
 ```
